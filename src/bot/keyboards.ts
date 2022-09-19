@@ -20,9 +20,12 @@ export const countryKeyboard = Markup.inlineKeyboard([
 ]);
 
 export const regionKeyboard = Markup.inlineKeyboard([
-    [
-      { text: "Санкт-Петербург", callback_data: "spb" },
-      { text: "Ленинградская область", callback_data: "spb_region" },
-    ],
-  ]);
-  
+  [
+    { text: "Санкт-Петербург", callback_data: "spb" },
+    { text: "Ленинградская область", callback_data: "spb_region" },
+  ],
+]);
+
+export const phoneKeyboard = Markup.keyboard([
+  [{ text: "Отправить номер телефона", request_contact: true }],
+]).resize();

@@ -34,6 +34,7 @@ export interface IDocument extends IObject, Document {
 
 export interface IModel extends Model<IDocument> {
   // createIfNotExists(mail: IMongoose): Promise<IObject>;
+  deletePrevious(userId: string): Promise<void>;
   deleteOld(): Promise<void>;
 }
 
@@ -102,5 +103,9 @@ EmailSchema.statics.deleteOld = async function (): Promise<void> {
   console.log(currentDate, " ", pastDate);
   await Emails.deleteMany({ createdAt: { $lte: pastDate } });
 };
+
+EmailSchema.statics.deletePrevious = async function (userId: string): Promise<void> {
+  await Emails.deleteMany({userTelegramId: userId});
+}
 
 export const Emails = model<IDocument, IModel>("Emails", EmailSchema, "Emails");
