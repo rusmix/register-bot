@@ -8,7 +8,12 @@ const nodemailer = require("nodemailer");
 const needle = require("needle");
 const fs = require("fs");
 
-import { countryKeyboard, initialKeyboard, regionKeyboard } from "./keyboards";
+import {
+  countryKeyboard,
+  initialKeyboard,
+  phoneKeyboard,
+  regionKeyboard,
+} from "./keyboards";
 
 type BaseMessage = Update.New &
   Update.NonChannel &
@@ -34,12 +39,11 @@ export class BotStrategies {
   constructor(private readonly bot: Telegraf<Context>) {}
 
   async Initialize() {
-    
-
     await this.bot.telegram.setMyCommands([
-      { command: 'start', description: 'Отправить письмо ещё раз' },
-    ])
+      { command: "start", description: "Отправить письмо ещё раз" },
+    ]);
 
+    // await this.bot.telegram.setChatDescription("вот такмогу");
     this.bot.start((ctx: Context) => this.start(ctx));
     // this.bot.hears(/\/mail1370/, (ctx: Context) => this.getClients(ctx));
 
@@ -109,7 +113,7 @@ export class BotStrategies {
     });
 
     this.bot.action("spb", async (ctx) => {
-      ctx.editMessageText("Напишите ФИО (имя, фамилию)");
+      ctx.editMessageText("Как Вас зовут?");
       await Emails.updateOne(
         { userTelegramId: ctx.update.callback_query.from.id },
         { $set: { region: "Санкт-Петербург", state: State.sendName } }
@@ -118,7 +122,7 @@ export class BotStrategies {
     });
 
     this.bot.action("spb_region", async (ctx) => {
-      ctx.editMessageText("Напишите ФИО (имя, фамилию)");
+      ctx.editMessageText("Как Вас зовут?");
       await Emails.updateOne(
         { userTelegramId: ctx.update.callback_query.from.id },
         { $set: { country: "Ленинградская область", state: State.sendName } }
@@ -151,33 +155,41 @@ export class BotStrategies {
             { $set: { userName: message.text, state: State.sendPhone } }
           );
           console.log("стейт стал сendphone  ", res1);
-          ctx.reply("Теперь напишите свой номер телефона:");
+          ctx.reply("Номер вашего телефона?", phoneKeyboard);
           break;
         case State.sendPhone:
-          if (!this.validatePhone(message.text)) {
-            ctx.reply("Введите корректный номер телефона🤨");
-            return;
-          }
-          await Emails.updateOne(
-            { userTelegramId: userId },
-            { $set: { phone: message.text, state: State.sendDoc } }
-          );
-          ctx.reply("Отправьте скан паспорта в PDF");
-          break;
-        case State.sendDoc:
-          if (!(await this.validateDoc(message))) {
-            ctx.reply("Отправьте PDF скан паспорта!");
-            return;
-          } else {
-            ctx.reply("Письмо отправлено!");
+          if (ctx.message?.contact) {
+            console.log(ctx.message.contact.phone_number);
             await Emails.updateOne(
               { userTelegramId: userId },
-              { $set: { doc: message.document.file_id, state: State.default } }
+              {
+                $set: {
+                  phone: ctx.message.contact.phone_number,
+                  state: State.default,
+                },
+              }
             );
             const res = await await Emails.findOne({ userTelegramId: userId });
             await this.sendEmail(res);
+          } else {
+            ctx.reply("Нажмите на кнопку отправить контакт", phoneKeyboard);
+            return;
           }
           break;
+        // case State.sendDoc:
+        //   if (!(await this.validateDoc(message))) {
+        //     ctx.reply("Отправьте PDF скан паспорта!");
+        //     return;
+        //   } else {
+        //     ctx.reply("Письмо отправлено!");
+        //     await Emails.updateOne(
+        //       { userTelegramId: userId },
+        //       { $set: { doc: message.document.file_id, state: State.default } }
+        //     );
+        //     const res = await await Emails.findOne({ userTelegramId: userId });
+        //     await this.sendEmail(res);
+        //   }
+        //   break;
         case State.default:
           break;
       }
@@ -244,9 +256,9 @@ export class BotStrategies {
     console.log(__dirname);
     try {
       // console.log("допустим отправилось");
-      console.log(mail);
-      const [fileName, ext] = await this.copyDocument(mail.doc);
-      console.log("filename is:", fileName, "\n", ext, "\n nigger");
+      // console.log(mail);
+      // const [fileName, ext] = await this.copyDocument(mail.doc);
+      // console.log("filename is:", fileName, "\n", ext, "\n nigger");
       // Generate test SMTP service account from ethereal.email
       // Only needed if you don't have a real mail account for testing
 
@@ -262,8 +274,8 @@ export class BotStrategies {
         },
       });
 
-      const dirname = __dirname.split("/").slice(0, -2).join("/");
-      console.log(dirname);
+      // const dirname = __dirname.split("/").slice(0, -2).join("/");
+      // console.log(dirname);
       let text = "default";
       if (mail?.userName) {
         text = mail.userName.split(" ").join("_");
@@ -276,11 +288,11 @@ export class BotStrategies {
         subject: mail.userName, // Subject line
         text: `Тема обращения: ${mail.type} \nГражданство: ${mail.country} \nРегион проживания: ${mail.region} \nФИО: ${mail.userName} \nНомер телефона: ${mail.phone}`, // plain text body
         //html: `${mail.text}`, // html body
-        attachments: {
-          filename: `${text}.${ext}`,
-          path: dirname + `/documents/${fileName}`,
-          cid: `${fileName}`, // should be as unique as possible
-        },
+        // attachments: {
+        //   filename: `${text}.${ext}`,
+        //   path: dirname + `/documents/${fileName}`,
+        //   cid: `${fileName}`, // should be as unique as possible
+        // },
       });
 
       // fs.unlink(dirname + `/documents/${fileName}`, (err) => {
@@ -299,8 +311,11 @@ export class BotStrategies {
     try {
       await Emails.deleteOld();
       const message = ctx.message as TgMessage;
-      console.log(message);
       const userId = message.from.id;
+
+      await Emails.deletePrevious(userId as unknown as string);
+     
+      console.log(message);
 
       let greeting = "Добрый день";
 
