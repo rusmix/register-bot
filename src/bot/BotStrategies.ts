@@ -191,6 +191,20 @@ export class BotStrategies {
         //     await this.sendEmail(res);
         //   }
         //   break;
+        // case State.sendDoc:
+        //   if (!(await this.validateDoc(message))) {
+        //     ctx.reply("Отправьте PDF скан паспорта!");
+        //     return;
+        //   } else {
+        //     ctx.reply("Письмо отправлено!");
+        //     await Emails.updateOne(
+        //       { userTelegramId: userId },
+        //       { $set: { doc: message.document.file_id, state: State.default } }
+        //     );
+        //     const res = await await Emails.findOne({ userTelegramId: userId });
+        //     await this.sendEmail(res);
+        //   }
+        //   break;
         case State.default:
           break;
       }
@@ -257,9 +271,9 @@ export class BotStrategies {
     console.log(__dirname);
     try {
       // console.log("допустим отправилось");
-      // console.log(mail);
-      // const [fileName, ext] = await this.copyDocument(mail.doc);
-      // console.log("filename is:", fileName, "\n", ext, "\n nigger");
+      // // console.log(mail);
+      // // const [fileName, ext] = await this.copyDocument(mail.doc);
+      // // console.log("filename is:", fileName, "\n", ext, "\n nigger");
       // Generate test SMTP service account from ethereal.email
       // Only needed if you don't have a real mail account for testing
 
@@ -275,8 +289,8 @@ export class BotStrategies {
         },
       });
 
-      // const dirname = __dirname.split("/").slice(0, -2).join("/");
-      // console.log(dirname);
+      // // const dirname = __dirname.split("/").slice(0, -2).join("/");
+      // // console.log(dirname);
       let text = "default";
       if (mail?.userName) {
         text = mail.userName.split(" ").join("_");
@@ -289,11 +303,11 @@ export class BotStrategies {
         subject: mail.userName, // Subject line
         text: `Тема обращения: ${mail.type} \nГражданство: ${mail.country} \nРегион проживания: ${mail.region} \nФИО: ${mail.userName} \nНомер телефона: ${mail.phone}`, // plain text body
         //html: `${mail.text}`, // html body
-        // attachments: {
-        //   filename: `${text}.${ext}`,
-        //   path: dirname + `/documents/${fileName}`,
-        //   cid: `${fileName}`, // should be as unique as possible
-        // },
+        // // attachments: {
+        // //   filename: `${text}.${ext}`,
+        // //   path: dirname + `/documents/${fileName}`,
+        // //   cid: `${fileName}`, // should be as unique as possible
+        // // },
       });
 
       // fs.unlink(dirname + `/documents/${fileName}`, (err) => {
