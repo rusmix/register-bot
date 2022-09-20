@@ -10,10 +10,12 @@ const fs = require("fs");
 
 import {
   countryKeyboard,
-  initialKeyboard,
   phoneKeyboard,
   regionKeyboard,
+  serviceKeyboard,
 } from "./keyboards";
+// import { russian, tadjik, uzbek } from "./texts";
+import { ELanguage, LanguagesJsonParser } from "./jsonParser";
 
 type BaseMessage = Update.New &
   Update.NonChannel &
@@ -37,6 +39,9 @@ type TgAsset = {
 };
 
 export class BotStrategies {
+  private languagesJsonParser = new LanguagesJsonParser(
+    __dirname.split("/").slice(0, -2).join("/") + "/src/bot/texts.json"
+  );
   constructor(private readonly bot: Telegraf<Context>) {}
 
   async Initialize() {
@@ -46,100 +51,119 @@ export class BotStrategies {
 
     // await this.bot.telegram.setChatDescription("вот такмогу");
     this.bot.start((ctx: Context) => this.start(ctx));
+    this.bot.hears(/\/settj1/, (ctx: Context) => {
+      const text = (ctx.message as TgMessage).text
+        .split(" ")
+        .slice(1, -1)
+        .join(" ");
+      this.languagesJsonParser.set(ELanguage.TJ, text);
+    });
+    this.bot.hears(/\/setuz/, (ctx: Context) => {
+      const text = (ctx.message as TgMessage).text
+        .split(" ")
+        .slice(1, -1)
+        .join(" ");
+      this.languagesJsonParser.set(ELanguage.UZ, text);
+    });
+    this.bot.hears(/\/setru1/, (ctx: Context) => {
+      const text = (ctx.message as TgMessage).text
+        .split(" ")
+        .slice(1, -1)
+        .join(" ");
+      this.languagesJsonParser.set(ELanguage.RU, text);
+    });
     // this.bot.hears(/\/mail1370/, (ctx: Context) => this.getClients(ctx));
 
     // this.clearBD();
+    // this.bot.catch(console.error);
+    this.bot.action("patent", async (ctx) => this.handleService(ctx, "Патент"));
+    this.bot.action("work", async (ctx) => this.handleService(ctx, "Работа"));
+    this.bot.action("propiska", async (ctx) =>
+      this.handleService(ctx, "Прописка")
+    );
+    this.bot.action("insurance", async (ctx) =>
+      this.handleService(ctx, "Страховка")
+    );
+    this.bot.action("advocate", async (ctx) =>
+      this.handleService(ctx, "Адвокат")
+    );
+    this.bot.action("dolg", async (ctx) =>
+      this.handleService(ctx, "Списать долг")
+    );
+    this.bot.action("otherService", async (ctx) =>
+      this.handleService(ctx, "Другое")
+    );
 
-    this.bot.action("patent", async (ctx) => {
-      ctx.editMessageText("Выберите гражданство", countryKeyboard);
-      await Emails.updateOne(
-        { userTelegramId: ctx.update.callback_query.from.id },
-        { $set: { type: "Патент" } }
-      );
-      console.log(ctx);
-    });
+    this.bot.action("tadjikistan", async (ctx) =>
+      this.handleCountry(ctx, "Таджикистан", ELanguage.TJ)
+    );
+    this.bot.action("uzbekistan", async (ctx) =>
+      this.handleCountry(ctx, "Узбекистан", ELanguage.UZ)
+    );
+    this.bot.action("azerbaidjan", async (ctx) =>
+      this.handleCountry(ctx, "Азербайджан", ELanguage.RU)
+    );
+    this.bot.action("russia", async (ctx) =>
+      this.handleCountry(ctx, "Россия", ELanguage.RU)
+    );
+    this.bot.action("otherCountry", async (ctx) =>
+      this.handleCountry(ctx, "Другая страна", ELanguage.RU)
+    );
 
-    this.bot.action("work", async (ctx) => {
-      ctx.editMessageText("Выберите гражданство", countryKeyboard);
-      await Emails.updateOne(
-        { userTelegramId: ctx.update.callback_query.from.id },
-        { $set: { type: "Трудоустройство" } }
-      );
-      console.log(ctx);
-    });
-
-    this.bot.action("propiska", async (ctx) => {
-      ctx.editMessageText("Выберите гражданство", countryKeyboard);
-      await Emails.updateOne(
-        { userTelegramId: ctx.update.callback_query.from.id },
-        { $set: { type: "Прописка" } }
-      );
-      console.log(ctx);
-    });
-
-    this.bot.action("insurance", async (ctx) => {
-      ctx.editMessageText("Выберите гражданство", countryKeyboard);
-      await Emails.updateOne(
-        { userTelegramId: ctx.update.callback_query.from.id },
-        { $set: { type: "Страховка" } }
-      );
-      console.log(ctx);
-    });
-
-    this.bot.action("advocate", async (ctx) => {
-      ctx.editMessageText("Выберите гражданство", countryKeyboard);
-      await Emails.updateOne(
-        { userTelegramId: ctx.update.callback_query.from.id },
-        { $set: { type: "Адвокат (миграционный юрист)" } }
-      );
-      console.log(ctx);
-    });
-
-    this.bot.action("tadjikistan", async (ctx) => {
-      ctx.editMessageText("Выберите регион", regionKeyboard);
-      await Emails.updateOne(
-        { userTelegramId: ctx.update.callback_query.from.id },
-        { $set: { country: "Таджикистан" } }
-      );
-      console.log(ctx);
-    });
-
-    this.bot.action("uzbekistan", async (ctx) => {
-      ctx.editMessageText("Выберите регион", regionKeyboard);
-      await Emails.updateOne(
-        { userTelegramId: ctx.update.callback_query.from.id },
-        { $set: { country: "Узбекистан" } }
-      );
-      console.log(ctx);
-    });
-
-    this.bot.action("spb", async (ctx) => {
-      ctx.editMessageText("Как Вас зовут?");
-      await Emails.updateOne(
-        { userTelegramId: ctx.update.callback_query.from.id },
-        { $set: { region: "Санкт-Петербург", state: State.sendName } }
-      );
-      console.log(ctx);
-    });
-
-    this.bot.action("spb_region", async (ctx) => {
-      ctx.editMessageText("Как Вас зовут?");
-      await Emails.updateOne(
-        { userTelegramId: ctx.update.callback_query.from.id },
-        { $set: { country: "Ленинградская область", state: State.sendName } }
-      );
-      console.log(ctx);
-    });
+    this.bot.action("spb", async (ctx) =>
+      this.handleRegion(ctx, "Санкт-Петербург")
+    );
+    this.bot.action("spb_region", async (ctx) =>
+      this.handleRegion(ctx, "Ленинградская область")
+    );
+    this.bot.action("otherRegion", async (ctx) =>
+      this.handleRegion(ctx, "Другой")
+    );
 
     this.bot.on("message", (ctx: Context) => this.stateHandler(ctx));
+
+    this.bot.catch(console.error);
 
     console.log("BotStrategies initialization ended.");
   }
 
-  private validatePhone(phone) {
-    let regex =
-      /^(\+7|7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$/;
-    return regex.test(phone);
+  private async handleCountry(ctx, country: string, lg: ELanguage) {
+    try {
+      const text = this.languagesJsonParser.get(lg);
+      ctx.editMessageText(text, serviceKeyboard);
+      await Emails.updateOne(
+        { userTelegramId: ctx.update.callback_query.from.id },
+        { $set: { country: country } }
+      );
+      console.log(ctx);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  private async handleRegion(ctx, region: string) {
+    try {
+      ctx.editMessageText("Гражданство?", countryKeyboard);
+      await Emails.updateOne(
+        { userTelegramId: ctx.update.callback_query.from.id },
+        { $set: { region: region } }
+      );
+      console.log(ctx);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  private async handleService(ctx, service: string) {
+    try {
+      ctx.editMessageText("Как Вас зовут?");
+      await Emails.updateOne(
+        { userTelegramId: ctx.update.callback_query.from.id },
+        { $set: { type: service, state: State.sendName } }
+      );
+    } catch (e) {
+      console.log(e);
+    }
   }
 
   private async stateHandler(ctx: Context) {
@@ -156,7 +180,10 @@ export class BotStrategies {
             { $set: { userName: message.text, state: State.sendPhone } }
           );
           console.log("стейт стал сendphone  ", res1);
-          ctx.reply("Номер вашего телефона?", phoneKeyboard);
+          ctx.reply(
+            "Отправьте номер телефона, нажмите на кнопку ниже 👇🏼",
+            phoneKeyboard
+          );
           break;
         case State.sendPhone:
           if (message?.contact) {
@@ -172,8 +199,12 @@ export class BotStrategies {
             );
             const res = await await Emails.findOne({ userTelegramId: userId });
             await this.sendEmail(res);
+            ctx.reply("Заявка будет рассмотрена в ближайшее время.");
           } else {
-            ctx.reply("Нажмите на кнопку отправить контакт", phoneKeyboard);
+            ctx.reply(
+              "Отправьте номер телефона, нажмите на кнопку ниже 👇🏼",
+              phoneKeyboard
+            );
             return;
           }
           break;
@@ -206,6 +237,7 @@ export class BotStrategies {
         //   }
         //   break;
         case State.default:
+          ctx.reply("Нажмите на кнопку выше");
           break;
       }
     } catch (e) {
@@ -217,24 +249,24 @@ export class BotStrategies {
     await Emails.remove();
   }
 
-  private async validateDoc(message) {
-    if (message?.document) {
-      const doc = message.document.file_id;
-      const fileInfo = await this.bot.telegram.getFile(doc);
-      const fileLink = await this.bot.telegram.getFileLink(doc);
-      console.log(fileInfo, "________---_____", fileLink);
-      const fileExtension = fileInfo.file_path.split(".").splice(-1)[0];
-      if (fileExtension == "pdf") {
-        console.log(fileExtension);
-        return true;
-      } else {
-        return false;
-      }
-    } else if (message?.photo) {
-      return false;
-    }
-    return false;
-  }
+  // private async validateDoc(message) {
+  //   if (message?.document) {
+  //     const doc = message.document.file_id;
+  //     const fileInfo = await this.bot.telegram.getFile(doc);
+  //     const fileLink = await this.bot.telegram.getFileLink(doc);
+  //     console.log(fileInfo, "________---_____", fileLink);
+  //     const fileExtension = fileInfo.file_path.split(".").splice(-1)[0];
+  //     if (fileExtension == "pdf") {
+  //       console.log(fileExtension);
+  //       return true;
+  //     } else {
+  //       return false;
+  //     }
+  //   } else if (message?.photo) {
+  //     return false;
+  //   }
+  //   return false;
+  // }
 
   // private async cancelSending(ctx: Context) {
   //   const message = ctx.message as TgMessage;
@@ -249,23 +281,23 @@ export class BotStrategies {
   //   }
   // }
 
-  private async copyDocument(doc) {
-    // console.log(doc);
-    const fileInfo = await this.bot.telegram.getFile(doc);
-    const fileLink = await this.bot.telegram.getFileLink(doc);
-    console.log(fileInfo, "________---_____", fileLink);
-    const fileExtension = fileInfo.file_path.split(".").splice(-1)[0];
-    console.log(fileExtension);
-    const fileName = `${doc}.${fileExtension}`;
-    // console.log("openfile_____________\n",fs.open(fileName, "r"))
-    await needle
-      .get(`${fileLink.href}`)
-      .pipe(fs.createWriteStream(`documents/${fileName}`))
-      .on("done", function (err) {
-        console.log("Pipe finished!");
-      });
-    return [fileName, fileExtension];
-  }
+  // private async copyDocument(doc) {
+  //   // console.log(doc);
+  //   const fileInfo = await this.bot.telegram.getFile(doc);
+  //   const fileLink = await this.bot.telegram.getFileLink(doc);
+  //   console.log(fileInfo, "________---_____", fileLink);
+  //   const fileExtension = fileInfo.file_path.split(".").splice(-1)[0];
+  //   console.log(fileExtension);
+  //   const fileName = `${doc}.${fileExtension}`;
+  //   // console.log("openfile_____________\n",fs.open(fileName, "r"))
+  //   await needle
+  //     .get(`${fileLink.href}`)
+  //     .pipe(fs.createWriteStream(`documents/${fileName}`))
+  //     .on("done", function (err) {
+  //       console.log("Pipe finished!");
+  //     });
+  //   return [fileName, fileExtension];
+  // }
 
   private async sendEmail(mail) {
     console.log(__dirname);
@@ -343,8 +375,8 @@ export class BotStrategies {
       // const keyboard = Markup.keyboard(["Отправить"]).resize(true);
       await this.bot.telegram.sendMessage(
         userId,
-        greeting + "Выберите нужный пункт.\n",
-        initialKeyboard
+        greeting + "Выберите место проживания.\n",
+        regionKeyboard
       );
     } catch (e) {
       console.log(e);
