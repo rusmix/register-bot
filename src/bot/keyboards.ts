@@ -6,10 +6,6 @@ export const serviceKeyboard = Markup.inlineKeyboard([
     { text: "Трудоустройство", callback_data: "work" },
   ],
   [
-    { text: "Прописка", callback_data: "propiska" },
-    { text: "Страхование (ДМС)", callback_data: "insurance" },
-  ],
-  [
     { text: "Адвокат (миграционный юрист)", callback_data: "advocate" },
     { text: "Списать долг", callback_data: "dolg" },
   ],

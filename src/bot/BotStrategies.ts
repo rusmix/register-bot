@@ -54,21 +54,21 @@ export class BotStrategies {
     this.bot.hears(/\/settj1/, (ctx: Context) => {
       const text = (ctx.message as TgMessage).text
         .split(" ")
-        .slice(1, -1)
+        .slice(1)
         .join(" ");
       this.languagesJsonParser.set(ELanguage.TJ, text);
     });
     this.bot.hears(/\/setuz/, (ctx: Context) => {
       const text = (ctx.message as TgMessage).text
         .split(" ")
-        .slice(1, -1)
+        .slice(1)
         .join(" ");
       this.languagesJsonParser.set(ELanguage.UZ, text);
     });
     this.bot.hears(/\/setru1/, (ctx: Context) => {
       const text = (ctx.message as TgMessage).text
         .split(" ")
-        .slice(1, -1)
+        .slice(1)
         .join(" ");
       this.languagesJsonParser.set(ELanguage.RU, text);
     });
